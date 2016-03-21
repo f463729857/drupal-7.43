@@ -7,6 +7,10 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'WebDriver' => array($vendorDir . '/instaclick/php-webdriver/lib'),
+    'Psr\\Log\\' => array($vendorDir . '/psr/log'),
+    'JakubOnderka\\PhpConsoleHighlighter' => array($vendorDir . '/jakub-onderka/php-console-highlighter/src'),
+    'JakubOnderka\\PhpConsoleColor' => array($vendorDir . '/jakub-onderka/php-console-color/src'),
+    'Drush' => array($vendorDir . '/drush/drush/lib'),
     'Drupal\\Tests\\Driver' => array($vendorDir . '/drupal/drupal-driver/tests'),
     'Drupal\\Exception' => array($vendorDir . '/drupal/drupal-extension/src'),
     'Drupal\\DrupalExtension' => array($vendorDir . '/drupal/drupal-extension/src'),
