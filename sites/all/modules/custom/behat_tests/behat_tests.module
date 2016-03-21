@@ -1,0 +1,13 @@
+<?php
+
+function behat_tests_behat_info() {
+    $info = array(
+        'paths' => array(
+            // Specify the directory in which .feature files are located, relative
+            // to the module directory.
+            'features' => 'features',
+        ),
+    );
+
+    return $info;
+}

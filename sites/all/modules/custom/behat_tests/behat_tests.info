@@ -1,0 +1,5 @@
+name = Behat tests
+description = This module runs custom behat tests
+core = 7.x
+
+dependencies[] =behatrunner
