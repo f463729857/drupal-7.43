@@ -19,7 +19,7 @@ class DrupalBoot8 extends DrupalBoot {
   protected $request;
 
   function valid_root($path) {
-    if (!empty($path) && is_dir($path) && file_exists($path . '/autoload.php')) {
+    if (!empty($path) && is_dir($path) && file_exists($path . '/index.php')) {
       // Additional check for the presence of core/composer.json to
       // grant it is not a Drupal 7 site with a base folder named "core".
       $candidate = 'core/includes/common.inc';
@@ -31,53 +31,20 @@ class DrupalBoot8 extends DrupalBoot {
     }
   }
 
-  function get_version($drupal_root) {
-    // Load the autoloader so we can access the class constants.
-    drush_drupal_load_autoloader($drupal_root);
-    // Drush depends on bootstrap being loaded at this point.
-    require_once $drupal_root .'/core/includes/bootstrap.inc';
-    if (defined('Drupal::VERSION')) {
-      return \Drupal::VERSION;
-    }
-  }
-
   function get_profile() {
     return drupal_get_profile();
-  }
-
-  function conf_path($require_settings = TRUE, $reset = FALSE, Request $request = NULL) {
-    if (!isset($request)) {
-      if (\Drupal::hasRequest()) {
-        $request = \Drupal::request();
-      }
-      // @todo Remove once external CLI scripts (Drush) are updated.
-      else {
-        $request = Request::createFromGlobals();
-      }
-    }
-    if (\Drupal::hasService('kernel')) {
-      $site_path = \Drupal::service('kernel')->getSitePath();
-    }
-    if (!isset($site_path) || empty($site_path)) {
-      $site_path = DrupalKernel::findSitePath($request, $require_settings);
-    }
-    return $site_path;
   }
 
   function add_logger() {
     // If we're running on Drupal 8 or later, we provide a logger which will send
     // output to drush_log(). This should catch every message logged through every
     // channel.
-    $container = \Drupal::getContainer();
-    $parser = $container->get('logger.log_message_parser');
-    $drushLogger = drush_get_context('DRUSH_LOG_CALLBACK');
-    $logger = new \Drush\Log\DrushLog($parser, $drushLogger);
-    $container->get('logger.factory')->addLogger($logger);
+    \Drupal::getContainer()->get('logger.factory')->addLogger(new \Drush\Log\DrushLog);
   }
 
   function contrib_modules_paths() {
     return array(
-      $this->conf_path() . '/modules',
+      conf_path() . '/modules',
       'sites/all/modules',
       'modules',
     );
@@ -89,7 +56,7 @@ class DrupalBoot8 extends DrupalBoot {
    */
   function contrib_themes_paths() {
     return array(
-      $this->conf_path() . '/themes',
+      conf_path() . '/themes',
       'sites/all/themes',
       'themes',
     );
@@ -101,8 +68,8 @@ class DrupalBoot8 extends DrupalBoot {
     return $core;
   }
 
-  function bootstrap_drupal_database_validate() {
-    return parent::bootstrap_drupal_database_validate() && $this->bootstrap_drupal_database_has_table('key_value');
+  function bootstrap_drupal_root_validate() {
+    return drush_set_error('DRUSH_DRUPAL_VERSION_UNSUPPORTED', dt('Drush !drush_version does not support Drupal 8. You will need Drush version 8 or higher. See http://docs.drush.org/en/master/install/ for details.', array('!drush_version' => DRUSH_VERSION)));
   }
 
   function bootstrap_drupal_database() {
@@ -113,10 +80,9 @@ class DrupalBoot8 extends DrupalBoot {
   function bootstrap_drupal_configuration() {
     $this->request = Request::createFromGlobals();
     $classloader = drush_drupal_load_autoloader(DRUPAL_ROOT);
-    // @todo - use Request::create() and then no need to set PHP superglobals
     $this->kernel = DrupalKernel::createFromRequest($this->request, $classloader, 'prod');
 
-    // Unset drupal error handler and restore Drush's one.
+    // Unset drupal error handler and restore drush's one.
     restore_error_handler();
 
     parent::bootstrap_drupal_configuration();

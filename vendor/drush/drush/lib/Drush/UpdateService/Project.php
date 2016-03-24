@@ -235,12 +235,6 @@ class Project {
       $releases[$release_info['version']] = $release_info;
     }
 
-    // If there's no "Recommended major version", we want to recommend
-    // the most recent release.
-    if (!$recommended_major) {
-      $latest_version = key($releases);
-    }
-
     // If there is no -stable- release in the recommended major,
     // then take the latest version in the recommended major to be
     // the recommended release.
@@ -388,17 +382,13 @@ class Project {
    */
   public function getRecommendedOrSupportedRelease() {
     $majors = array();
-
-    $recommended_major = empty($this->parsed['recommended_major']) ? 0 : $this->parsed['recommended_major'];
-    if ($recommended_major != 0) {
+    if (!empty($this->parsed['recommended_major']) || $this->parsed['recommended_major'] == 0) {
       $majors[] = $this->parsed['recommended_major'];
     }
-    if (!empty($this->parsed['supported_majors'])) {
-      $supported = explode(',', $this->parsed['supported_majors']);
-      foreach ($supported as $v) {
-        if ($v != $recommended_major) {
-          $majors[] = $v;
-        }
+    $supported = explode(',', $this->parsed['supported_majors']);
+    foreach ($supported as $v) {
+      if ($v != $this->parsed['recommended_major']) {
+        $majors[] = $v;
       }
     }
     $releases = array();

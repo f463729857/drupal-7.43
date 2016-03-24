@@ -133,7 +133,7 @@ class makeMakefileCase extends CommandUnishTestCase {
         'name'     => 'gzip',
         'makefile' => 'gzip.make',
         'build'    => TRUE,
-        'md5'      => '526332db5456847c316cad7dc6d496f8',
+        'md5'      => '615975484966c36f4c9186601afd61e0',
         'options'  => array('no-core' => NULL),
       ),
       'ignore-checksums' => array(
@@ -222,7 +222,7 @@ class makeMakefileCase extends CommandUnishTestCase {
         'name'     => 'Test patching and writing of PATCHES.txt file',
         'makefile' => 'patches.make',
         'build'    => TRUE,
-        'md5' => '536ee287344c24f47e0808622d7d091b',
+        'md5' => 'edf94818907bff754b24ac5c34506028',
         'options'  => array('no-core' => NULL),
       ),
       'recursion' => array(
@@ -353,8 +353,8 @@ class makeMakefileCase extends CommandUnishTestCase {
 
     $this->assertFileExists(UNISH_SANDBOX . '/test-build/modules/honeypot/honeypot.info.yml');
     $contents = file_get_contents(UNISH_SANDBOX . '/test-build/modules/honeypot/honeypot.info.yml');
-    $this->assertContains('# Information added by drush on 2015-09-03', $contents);
-    $this->assertContains("version: '8.x-1.x-dev'", $contents);
+    $this->assertContains('# Information added by drush on ' . date('Y-m-d'), $contents);
+    $this->assertContains("version: '8.x-1.18-beta1+1-dev'", $contents);
     $this->assertContains("project: 'honeypot'", $contents);
   }
 
@@ -507,13 +507,7 @@ class makeMakefileCase extends CommandUnishTestCase {
    */
   function testMakeMoveBuild() {
     // Manually download a module.
-    $options = array(
-      'default-major' => 6, // The makefile used below is core = "6.x".
-      'destination' => UNISH_SANDBOX . '/sites/all/modules/contrib',
-      'yes' => NULL,
-      'dev' => NULL,
-    );
-    $this->drush('pm-download', array('cck_signup'), $options);
+    $this->drush('pm-download', array('cck_signup'), array('destination' => UNISH_SANDBOX . '/sites/all/modules/contrib', 'yes' => NULL));
 
     // Build a make file.
     $config = $this->getMakefile('contrib-destination');
@@ -764,7 +758,7 @@ class makeMakefileCase extends CommandUnishTestCase {
    * Test that files without a core attribute are correctly identified.
    */
   public function testNoCoreMakefileParsing() {
-    require_once __DIR__ . '/../commands/make/make.utilities.inc';
+    require __DIR__ . '/../commands/make/make.utilities.inc';
 
     // INI.
     $data = file_get_contents(__DIR__ . '/makefiles/no-core.make');

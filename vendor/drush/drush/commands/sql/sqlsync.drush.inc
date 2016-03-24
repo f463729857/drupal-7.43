@@ -2,6 +2,19 @@
 
 use Drush\Log\LogLevel;
 
+/*
+ * Notes:
+ * - Drush is required on source and dest (except with --no-dump)
+ * - Source and Dest can both be remote. Convenient.
+ * - No special handling for multiple targets. Use --no-dump.
+ * - We could move the sanitize confirmations earlier if desired.
+ * - A bit tricky to know where to put your drushrc/alias customizations. Can be local, $source, or $destination. Just add docs?
+ * - No longer optimizing for efficient rsync. We could add this back if desired.
+ *   -- Always use gzip during sql-dump. Don't use --ordered-dump.
+ *   -- No more 24-hour freshness check for a team of devs.
+ * - Can we now simplify anything in sitealias.inc or backend.inc?
+ */
+
 /**
  * Implementation of hook_drush_command().
  */
@@ -31,7 +44,6 @@ function sqlsync_drush_command() {
       // 'no-cache' => 'Do not cache the sql-dump file.',
       'no-dump' => 'Do not dump the sql database; always use an existing dump file.',
       'no-sync' => 'Do not rsync the database dump file from source to target.',
-      'runner' => 'Where to run the rsync command; defaults to the local site. Can also be "source" or "destination".',
       'source-db-url' => 'Database specification for source system to dump from.',
       'source-remote-port' => 'Override sql database port number in source-db-url. Optional.',
       'source-remote-host' => 'Remote machine to run sql-dump file on. Optional; default is local machine.',
@@ -88,16 +100,6 @@ function sqlsync_drush_help_alter(&$command) {
       unset($command['options']['source-target']['hidden'], $command['options']['target-target']['hidden']);
     }
   }
-}
-
-/**
- * Command argument complete callback.
- *
- * @return
- *  Array of available site aliases.
- */
-function sql_sql_sync_complete() {
-  return array('values' => array_keys(_drush_sitealias_all_list()));
 }
 
 /*
@@ -224,7 +226,6 @@ function drush_sqlsync_sql_sync($source, $destination) {
   else {
     $source_dump_path = drush_get_option('source-dump');
   }
-
   $do_rsync = !drush_get_option('no-sync');
   // Determine path/to/dump on destination.
   if (drush_get_option('target-dump')) {
@@ -233,27 +234,36 @@ function drush_sqlsync_sql_sync($source, $destination) {
   }
   elseif ($source_is_local && $destination_is_local) {
     $destination_dump_path = $source_dump_path;
-    $do_rsync = FALSE;
+    $do_rsync = false;
   }
   else {
     $tmp = '/tmp'; // Our fallback plan.
     drush_log(dt('Starting to discover temporary files directory on Destination.'), LogLevel::OK);
-    $return = drush_invoke_process($destination, 'core-status', array(), array(), array('integrate' => FALSE, 'override-simulated' => TRUE));
-    if (!$return['error_status'] && isset($return['object']['drush-temp'])) {
-      $tmp = $return['object']['drush-temp'];
+    $return = drush_invoke_process($destination, 'php-eval', array('return drush_find_tmp();'), array(), array('integrate' => FALSE, 'override-simulated' => TRUE));
+    if (!$return['error_status']) {
+      $tmp = $return['object'];
     }
     $destination_dump_path = $tmp . '/' . basename($source_dump_path);
     $rsync_options['yes'] = TRUE;  // No need to prompt as destination is a tmp file.
   }
-
   if ($do_rsync) {
     if (!drush_get_option('no-dump')) {
       // Cleanup if this command created the dump file.
       $rsync_options['remove-source-files'] = TRUE;
     }
-    $runner = drush_get_runner($source_settings, $destination_settings, drush_get_option('runner', FALSE));
-    // Since core-rsync is a strict-handling command and drush_invoke_process() puts options at end, we can't send along cli options to rsync.
-    // Alternatively, add options like --ssh-options to a site alias (usually on the machine that initiates the sql-sync).
+
+    // Try run to rsync locally so that aliases always resolve. https://github.com/drush-ops/drush/issues/668
+    if (drush_sitealias_is_remote_site($source) === FALSE) {
+      $runner = $source;
+    }
+    elseif (drush_sitealias_is_remote_site($destination) === FALSE) {
+      $runner = $destination;
+    }
+    else {
+      // Both are remote. Arbitrarily run rsync on destination. Aliases must be defined there (for now).
+      // @todo Add an option for choosing runner? Resolve aliases before rsync?
+      $runner = $destination;
+    }
     $return = drush_invoke_process($runner, 'core-rsync', array("$source:$source_dump_path", "$destination:$destination_dump_path"), $rsync_options);
     drush_log(dt('Copying dump file from Source to Destination.'), LogLevel::OK);
     if ($return['error_status']) {

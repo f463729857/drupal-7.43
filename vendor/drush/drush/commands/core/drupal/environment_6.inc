@@ -67,10 +67,7 @@ function drush_check_module_dependencies($modules, $module_info) {
       );
     }
     $status[$key]['unmet-dependencies'] = $unmet_dependencies;
-    $status[$key]['dependencies'] = array();
-    foreach ($dependencies as $dependency) {
-      $status[$key]['dependencies'][$dependency] = array('name' => $dependency);
-    }
+    $status[$key]['dependencies'] = $dependencies;
   }
 
   return $status;
@@ -215,23 +212,6 @@ function drush_system_modules_form_submit() {
   module_load_include('inc', 'system', 'system.admin');
   $form_state = array('values' => array('status' => $active_modules));
   drupal_execute('system_modules', $form_state);
-}
-
-/**
- * Returns a list of enabled themes. Use drush_get_themes() if you need to rebuild
- * and include hidden/disabled as well.
- *
- * @return array
- *  A list of themes keyed by name.
- */
-function drush_theme_list() {
-  $enabled = array();
-  foreach (list_themes() as $key => $info) {
-    if ($info->status) {
-      $enabled[$key] = $info;
-    }
-  }
-  return $enabled;
 }
 
 /**

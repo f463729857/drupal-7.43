@@ -5,6 +5,8 @@ A Drush shell alias is a shortcut to any Drush command or any shell command. Dru
 
 A shell alias is defined in a Drush configuration file called drushrc.php. See `drush topic docs-configuration`. There are two kinds of shell aliases: an alias whose value begins with a '!' will execute the rest of the line as bash commands. Aliases that do not start with a '!' will be interpreted as Drush commands.
 
+### Example:
+
         $options['shell-aliases']['pull'] = '!git pull';
         $options['shell-aliases']['noncore'] = 'pm-list --no-core';
 
@@ -19,15 +21,15 @@ For example, given the following site alias:
 
          $aliases['dev'] = array (
            'root' => '/path/to/drupal',
-           'uri' => 'http://example.com',
+           'uri' => 'mysite.org',
            '#live' => '@acme.live',
          );
 
 The alias below can be used for all your projects to fetch the database and files from the client's live site via `drush @dev pull-data`. Note that these aliases assume that the alias used defines an item named '\#live' (as shown in the above alias).
 
-    $options['shell-aliases'] = array( 
-      'pull-data' => '!drush sql-sync {{#live}} {{@target}} && drush rsync {{#live}}:%files {{@target}}:%files'
-    );
+### Shell aliases using replacements:
+
+`$options['shell-aliases']['pull-data'] = '!drush sql-sync {{#live}} {{@target}} && drush rsync {{#live}}:%files {{@target}}:%files';`
 
 If the user does not use these shell aliases with any site alias, then an error will be returned and the script will not run. These aliases with replacements can be used to quickly run combinations of drush sql-sync and rsync commands on the "standard" source or target site, reducing the risk of typos that might send information in the wrong direction or to the wrong site.
 

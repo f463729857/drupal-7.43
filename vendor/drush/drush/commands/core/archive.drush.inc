@@ -18,7 +18,7 @@ function archive_drush_command() {
       'description' => 'Describe the archive contents.',
       'tags' => 'Add tags to the archive manifest. Delimit multiple by commas.',
       'destination' => 'The full path and filename in which the archive should be stored. If omitted, it will be saved to the drush-backups directory and a filename will be generated.',
-      'overwrite' => 'Do not fail if the destination file exists; overwrite it instead. Default is --no-overwrite.',
+      'overwrite' => 'Do not fail if the destination file exists; overwrite it instead.',
       'generator' => 'The generator name to store in the MANIFEST file. The default is "Drush archive-dump".',
       'generatorversion' => 'The generator version number to store in the MANIFEST file. The default is ' . DRUSH_VERSION . '.',
       'pipe' => 'Only print the destination of the archive. Useful for scripts that don\'t pass --destination.',
@@ -52,7 +52,7 @@ function archive_drush_command() {
       ),
       'db-su' => 'Account to use when creating the new database. Optional.',
       'db-su-pw' => 'Password for the "db-su" account. Optional.',
-      'overwrite' => 'Allow drush to overwrite any files in the destination. Default is --no-overwrite.',
+      'overwrite' => 'Allow drush to overwrite any files in the destination.',
       'tar-options' => 'Options passed thru to the tar command.',
     ),
     'examples' => array(

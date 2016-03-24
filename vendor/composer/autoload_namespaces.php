@@ -8,8 +8,6 @@ $baseDir = dirname($vendorDir);
 return array(
     'WebDriver' => array($vendorDir . '/instaclick/php-webdriver/lib'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log'),
-    'JakubOnderka\\PhpConsoleHighlighter' => array($vendorDir . '/jakub-onderka/php-console-highlighter/src'),
-    'JakubOnderka\\PhpConsoleColor' => array($vendorDir . '/jakub-onderka/php-console-color/src'),
     'Drush' => array($vendorDir . '/drush/drush/lib'),
     'Drupal\\Tests\\Driver' => array($vendorDir . '/drupal/drupal-driver/tests'),
     'Drupal\\Exception' => array($vendorDir . '/drupal/drupal-extension/src'),
@@ -17,6 +15,7 @@ return array(
     'Drupal\\Drupal' => array($vendorDir . '/drupal/drupal-extension/src'),
     'Drupal\\Driver' => array($vendorDir . '/drupal/drupal-driver/src'),
     'Drupal\\Component' => array($vendorDir . '/drupal/drupal-driver/src'),
+    'Boris' => array($vendorDir . '/d11wtq/boris/lib'),
     'Behat\\Transliterator' => array($vendorDir . '/behat/transliterator/src'),
     'Behat\\Testwork' => array($vendorDir . '/behat/behat/src'),
     'Behat\\MinkExtension' => array($vendorDir . '/behat/mink-extension/src'),

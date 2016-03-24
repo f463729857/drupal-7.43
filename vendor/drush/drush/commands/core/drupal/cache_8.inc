@@ -45,8 +45,9 @@ function _drush_cache_clear_types($include_bootstrapped_types) {
   if ($include_bootstrapped_types) {
     $types += array(
       'theme-registry' => 'drush_cache_clear_theme_registry',
-      'router' => 'drush_cache_clear_router',
+      'menu' => 'drush_cache_clear_menu',
       'css-js' => 'drush_cache_clear_css_js',
+      'block' => 'drush_cache_clear_block',
       'module-list' => 'drush_get_modules',
       'theme-list' => 'drush_get_themes',
       'render' => 'drush_cache_clear_render',
@@ -59,10 +60,10 @@ function drush_cache_clear_theme_registry() {
   \Drupal::service('theme.registry')->reset();
 }
 
-function drush_cache_clear_router() {
-  /** @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
-  $router_builder = \Drupal::service('router.builder');
-  $router_builder->rebuild;
+function drush_cache_clear_menu() {
+  /** @var \Drupal\Core\Menu\MenuLinkManagerInterface $menu_link_manager */
+  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
+  return $menu_link_manager->rebuild();
 }
 
 function drush_cache_clear_css_js() {
@@ -75,13 +76,12 @@ function drush_cache_clear_css_js() {
  * Clear the cache of the block output.
  */
 function drush_cache_clear_block() {
-  // There is no distinct block cache in D8. See https://github.com/drush-ops/drush/issues/1531.
-  // \Drupal::cache('block')->deleteAll();
+  \Drupal::cache('block')->deleteAll();
 }
 
 /**
  * Clears the render cache entries.
  */
 function drush_cache_clear_render() {
-  Cache::invalidateTags(['rendered']);
+  \Drupal::cache('render')->deleteAll();
 }

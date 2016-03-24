@@ -12,14 +12,7 @@ abstract class DrupalBoot extends BaseBoot {
   function valid_root($path) {
   }
 
-  function get_version($drupal_root) {
-  }
-
   function get_profile() {
-  }
-
-  function conf_path($require_settings = TRUE, $reset = FALSE) {
-    return conf_path($require_settings = TRUE, $reset = FALSE);
   }
 
   /**
@@ -50,22 +43,14 @@ abstract class DrupalBoot extends BaseBoot {
   }
 
   /**
-   * List of bootstrap phases where Drush should stop and look for commandfiles.
-   *
-   * For Drupal, we try at these bootstrap phases:
-   *
-   *   - Drush preflight: to find commandfiles in any system location,
-   *     out of a Drupal installation.
-   *   - Drupal root: to find commandfiles based on Drupal core version.
-   *   - Drupal full: to find commandfiles defined within a Drupal directory.
-   *
-   * Once a command is found, Drush will ensure a bootstrap to the phase
-   * declared by the command.
-   *
-   * @return array of PHASE indexes.
+   * The phases where Drush will look to see if new commandfiles
+   * have been defined.  For Drupal, we first do a preflight, and
+   * if a command is not found at that point, we next attempt a full
+   * bootstrap.  If a command is found after preflight, then we
+   * bootstrap to the phase declared by the command.
    */
   function bootstrap_init_phases() {
-    return array(DRUSH_BOOTSTRAP_DRUSH, DRUSH_BOOTSTRAP_DRUPAL_ROOT, DRUSH_BOOTSTRAP_DRUPAL_FULL);
+    return array(DRUSH_BOOTSTRAP_DRUSH, DRUSH_BOOTSTRAP_DRUPAL_FULL);
   }
 
   function enforce_requirement(&$command) {
@@ -115,11 +100,14 @@ abstract class DrupalBoot extends BaseBoot {
         $searchpath[] = $drupal_root . '/../drush';
         $searchpath[] = $drupal_root . '/drush';
         $searchpath[] = $drupal_root . '/sites/all/drush';
+
+        // Add the drupalboot.drush.inc commandfile.
+        // $searchpath[] = __DIR__;
         break;
       case DRUSH_BOOTSTRAP_DRUPAL_SITE:
         // If we are going to stop bootstrapping at the site, then
         // we will quickly add all commandfiles that we can find for
-        // any extension associated with the site, whether it is enabled
+        // any module associated with the site, whether it is enabled
         // or not.  If we are, however, going to continue on to bootstrap
         // all the way to DRUSH_BOOTSTRAP_DRUPAL_FULL, then we will
         // instead wait for that phase, which will more carefully add
@@ -134,16 +122,16 @@ abstract class DrupalBoot extends BaseBoot {
           if ($cached = drush_cache_get($cid)) {
             $profile = $cached->data;
             $searchpath[] = "profiles/$profile/modules";
-            $searchpath[] = "profiles/$profile/themes";
           }
           else {
             // If install_profile is not available, scan all profiles.
             $searchpath[] = "profiles";
             $searchpath[] = "sites/all/profiles";
           }
-
-          $searchpath = array_merge($searchpath, $this->contrib_themes_paths());
         }
+
+        // TODO: Treat themes like modules and stop unconditionally searching here.
+        $searchpath = array_merge($searchpath, $this->contrib_themes_paths());
         break;
       case DRUSH_BOOTSTRAP_DRUPAL_CONFIGURATION:
         // Nothing to do here anymore. Left for documentation.
@@ -161,11 +149,6 @@ abstract class DrupalBoot extends BaseBoot {
           if ($filepath && $filepath != '/') {
             $searchpath[] = $filepath;
           }
-        }
-
-        // Check all enabled themes including non-default and non-admin.
-        foreach (drush_theme_list() as $key => $value) {
-          $searchpath[] = drupal_get_path('theme', $key);
         }
         break;
     }
@@ -200,7 +183,7 @@ abstract class DrupalBoot extends BaseBoot {
         }
         return array(
           'bootstrap_errors' => array(
-            'DRUSH_COMMAND_DEPENDENCY_ERROR' => dt('Command !command needs the following extension(s) enabled to run: !dependencies.', array(
+            'DRUSH_COMMAND_DEPENDENCY_ERROR' => dt('Command !command needs the following module(s) enabled to run: !dependencies.', array(
               '!command' => $command_name,
               '!dependencies' => $modules,
             )),
@@ -349,7 +332,7 @@ abstract class DrupalBoot extends BaseBoot {
       }
       // Fill in defaults.
       $drupal_base_url += array(
-        'path' => '',
+        'path' => NULL,
         'host' => NULL,
         'port' => NULL,
       );
@@ -364,15 +347,20 @@ abstract class DrupalBoot extends BaseBoot {
       }
       $_SERVER['SERVER_PORT'] = $drupal_base_url['port'];
 
-      $_SERVER['REQUEST_URI'] = $drupal_base_url['path'] . '/';
+      if (array_key_exists('path', $drupal_base_url)) {
+        $_SERVER['PHP_SELF'] = $drupal_base_url['path'] . '/index.php';
+      }
+      else {
+        $_SERVER['PHP_SELF'] = '/index.php';
+      }
     }
     else {
       $_SERVER['HTTP_HOST'] = 'default';
-      $_SERVER['REQUEST_URI'] = '/';
+      $_SERVER['PHP_SELF'] = '/index.php';
     }
 
-    $_SERVER['PHP_SELF'] = $_SERVER['REQUEST_URI'] . 'index.php';
     $_SERVER['SCRIPT_NAME'] = $_SERVER['PHP_SELF'];
+    $_SERVER['REQUEST_URI'] = '/';
     $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
     $_SERVER['REQUEST_METHOD']  = NULL;
 
@@ -388,7 +376,7 @@ abstract class DrupalBoot extends BaseBoot {
   function bootstrap_drupal_site_validate_settings_present() {
     $site = drush_bootstrap_value('site', $_SERVER['HTTP_HOST']);
 
-    $conf_path = drush_bootstrap_value('conf_path', $this->conf_path(TRUE, TRUE));
+    $conf_path = drush_bootstrap_value('conf_path', \conf_path(TRUE, TRUE));
     $conf_file = "$conf_path/settings.php";
     if (!file_exists($conf_file)) {
       return drush_bootstrap_error('DRUPAL_SITE_SETTINGS_NOT_FOUND', dt("Could not find a Drupal settings.php file at !file.",

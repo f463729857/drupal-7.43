@@ -15,8 +15,7 @@ function drush_make_generate($file = NULL) {
   $version_options = _drush_make_generate_get_version_options();
   $all_extensions = drush_get_extensions();
   list($projects, $libraries) = _drush_make_generate_projects($all_extensions, $version_options);
-  $core = drush_drupal_major_version() . '.x';
-  $contents = make_generate_makefile_contents($projects, $libraries, $core);
+  $contents = _drush_make_generate_makefile_contents($projects, $libraries);
 
   // Write or print our makefile.
   make_generate_print($contents, $file);
@@ -117,12 +116,7 @@ function _drush_make_generate_projects($all_extensions, $version_options) {
     }
     // Add version number if this project's version is to be tracked.
     if (_drush_generate_track_version($name, $version_options) && $project["version"]) {
-      $version = preg_replace("/^" . drush_get_drupal_core_compatibility() . "-/", "", $project["version"]);
-      // Strip out MINOR+GIT_COMMIT strings for dev releases.
-      if (substr($version, -4) == '-dev' && strpos($version, '+')) {
-        $version = substr($version, 0, strrpos($version, '.')) . '.x-dev';
-      }
-      $projects[$name]['version'] = $version;
+      $projects[$name]['version'] = preg_replace("/^" . drush_get_drupal_core_compatibility() . "-/", "", $project["version"]);
     }
     foreach ($project['extensions'] as $extension_name) {
       _drush_make_generate_add_patch_files($projects[$name], _drush_extension_get_path($all_extensions[$extension_name]));

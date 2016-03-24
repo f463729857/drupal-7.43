@@ -16,10 +16,10 @@
 
 namespace Drush\Log;
 
-use Drupal\Core\Logger\LogMessageParserInterface;
-use Drupal\Core\Logger\RfcLoggerTrait;
-use Drupal\Core\Logger\RfcLogLevel;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Psr\Log\LoggerTrait;
+
 
 /**
  * Redirects Drupal logging messages to Drush log.
@@ -31,30 +31,7 @@ use Psr\Log\LoggerInterface;
  */
 class DrushLog implements LoggerInterface {
 
-  use RfcLoggerTrait;
-
-  /**
-   * The message's placeholders parser.
-   *
-   * @var \Drupal\Core\Logger\LogMessageParserInterface
-   */
-  protected $parser;
-
-  /**
-   * The logger that messages will be passed through to.
-   */
-  protected $logger;
-
-  /**
-   * Constructs a DrushLog object.
-   *
-   * @param \Drupal\Core\Logger\LogMessageParserInterface $parser
-   *   The parser to use when extracting message variables.
-   */
-  public function __construct(LogMessageParserInterface $parser, LoggerInterface $logger) {
-    $this->parser = $parser;
-    $this->logger = $logger;
-  }
+  use LoggerTrait;
 
   /**
    * {@inheritdoc}
@@ -66,38 +43,32 @@ class DrushLog implements LoggerInterface {
     // and they should cause Drush to exit or panic. Not sure how to handle this,
     // though.
     switch ($level) {
-      case RfcLogLevel::ALERT:
-      case RfcLogLevel::CRITICAL:
-      case RfcLogLevel::EMERGENCY:
-      case RfcLogLevel::ERROR:
-        $error_type = LogLevel::ERROR;
+      case LogLevel::ALERT:
+      case LogLevel::CRITICAL:
+      case LogLevel::EMERGENCY:
+      case LogLevel::ERROR:
+        $error_type = 'error';
         break;
 
-      case RfcLogLevel::WARNING:
-        $error_type = LogLevel::WARNING;
+      case LogLevel::WARNING:
+        $error_type = 'warning';
         break;
 
-      // TODO: RfcLogLevel::DEBUG should be 'debug' rather than 'notice'?
-      case RfcLogLevel::DEBUG:
-      case RfcLogLevel::INFO:
-      case RfcLogLevel::NOTICE:
-        $error_type = LogLevel::NOTICE;
+      case LogLevel::DEBUG:
+      case LogLevel::INFO:
+      case LogLevel::NOTICE:
+        $error_type = 'notice';
         break;
 
       // TODO: Unknown log levels that are not defined
-      // in Psr\Log\LogLevel or Drush\Log\LogLevel SHOULD NOT be used.  See
+      // in Psr\Log\LogLevel SHOULD NOT be used.  See
       // https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-3-logger-interface.md
       // We should convert these to 'notice'.
       default:
         $error_type = $level;
         break;
     }
-
-    // Populate the message placeholders and then replace them in the message.
-    $message_placeholders = $this->parser->parseMessagePlaceholders($message, $context);
-    $message = empty($message_placeholders) ? $message : strtr($message, $message_placeholders);
-
-    $this->logger->log($error_type, $message, $context);
+    drush_log($message, $error_type);
   }
 
 }

@@ -237,8 +237,6 @@ function update_main() {
   else {
     drush_log(dt("No database updates required"), LogLevel::SUCCESS);
   }
-
-  return count($pending);
 }
 
 function _update_batch_command($id) {

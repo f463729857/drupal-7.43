@@ -24,17 +24,6 @@ interface Boot {
    */
   function valid_root($path);
 
-
-  /**
-   * Given a site root directory, determine the exact version of the software.
-   *
-   * @param string $root
-   *   The full path to the site installation, with no trailing slash.
-   * @return string|NULL
-   *   The version string for the current version of the software, e.g. 8.1.3
-   */
-  function get_version($root);
-
   /**
    * Main entrypoint to bootstrap the selected CMS and
    * execute the selected command.
@@ -59,12 +48,11 @@ interface Boot {
   function bootstrap_phases();
 
   /**
-   * List of bootstrap phases where Drush should stop and look for commandfiles.
-   *
-   * This allows us to bootstrap to a minimum neccesary to find commands.
-   *
-   * Once a command is found, Drush will ensure a bootstrap to the phase
-   * declared by the command.
+   * Lists the key bootstrap phases where Drush should
+   * stop and look for more commandfiles.  In Drupal, Drush
+   * first does just a preflight, and if the selected
+   * command is not found after preflight, then a full
+   * bootstrap is done.
    *
    * @return array of PHASE indexes.
    */

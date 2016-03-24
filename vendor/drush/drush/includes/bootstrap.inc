@@ -161,12 +161,7 @@ function drush_get_bootstrap_candidate_classnames() {
   return $candidates;
 }
 
-/**
- * Look up the best bootstrap class for the given location
- * from the set of available candidates.
- */
 function drush_bootstrap_class_for_root($path) {
-  drush_load_bootstrap_commandfile_at_path($path);
   $candidates = drush_get_bootstrap_candidates();
   foreach ($candidates as $candidate) {
     if ($candidate->valid_root($path)) {
@@ -174,23 +169,6 @@ function drush_bootstrap_class_for_root($path) {
     }
   }
   return NULL;
-}
-
-/**
- * Check to see if there is a bootstrap class available
- * at the specified location; if there is, load it.
- */
-function drush_load_bootstrap_commandfile_at_path($path) {
-  static $paths = array();
-
-  if (!empty($path) && (!array_key_exists($path, $paths))) {
-    $paths[$path] = TRUE;
-    // Check to see if we have any bootstrap classes in this location.
-    $bootstrap_class_dir = $path . '/drush/bootstrap';
-    if (is_dir($bootstrap_class_dir)) {
-      _drush_add_commandfiles(array($bootstrap_class_dir), DRUSH_BOOTSTRAP_NONE);
-    }
-  }
 }
 
 /**
@@ -231,8 +209,6 @@ function drush_latch_bootstrap_object($bootstrap) {
  * Get the appropriate bootstrap object.  We'll search for a new
  * bootstrap object every time someone asks for one until we start
  * bootstrapping; then we'll returned the same cached one every time.
- *
- * @return \Drush\Boot\Boot
  */
 function drush_get_bootstrap_object() {
   $bootstrap = drush_get_context('DRUSH_BOOTSTRAP_OBJECT', FALSE);
@@ -281,16 +257,9 @@ function drush_bootstrap_value($context, $value = null) {
 }
 
 /**
- * Returns an array that determines what bootstrap phases
- * are necessary to bootstrap the CMS.
+ * Helper function listing phases.
  *
- * @param bool $function_names
- *   (optional) If TRUE, return an array of method names index by their
- *   corresponding phase values. Otherwise return an array of phase values.
- *
- * @return array
- *
- * @see \Drush\Boot\Boot::bootstrap_phases()
+ * For commands that need to iterate through the phases, such as help
  */
 function _drush_bootstrap_phases($function_names = FALSE) {
   $result = array();
@@ -310,18 +279,8 @@ function _drush_bootstrap_phases($function_names = FALSE) {
  * This function will sequentially bootstrap each
  * lower phase up to the phase that has been requested.
  *
- * @param int $phase
- *   The bootstrap phase to bootstrap to.
- * @param int $phase_max
- *   (optional) The maximum level to boot to. This does not have a use in this
- *   function itself but can be useful for other code called from within this
- *   function, to know if e.g. a caller is in the process of booting to the
- *   specified level. If specified, it should never be lower than $phase.
- *
- * @return bool
- *   TRUE if the specified bootstrap phase has completed.
- *
- * @see \Drush\Boot\Boot::bootstrap_phases()
+ * @param phase
+ *   The bootstrap phase to bootstrap to.  @see \Drush\Boot::bootstrap_phases
  */
 function drush_bootstrap($phase, $phase_max = FALSE) {
   $bootstrap = drush_get_bootstrap_object();
@@ -379,10 +338,10 @@ function drush_bootstrap($phase, $phase_max = FALSE) {
  * http://en.wikipedia.org/wiki/HTTP_referer
  *
  *
- * @param int $phase
+ * @param phase
  *   The bootstrap phase to test
  *
- * @return bool
+ * @returns
  *   TRUE if the specified bootstrap phase has completed.
  */
 function drush_has_boostrapped($phase) {
@@ -402,13 +361,12 @@ function drush_has_boostrapped($phase) {
  * store the result from that execution in a local static. This avoids
  * validating phases multiple times.
  *
- * @param int $phase
- *   The bootstrap phase to validate to.
+ * @param phase
+ *   The bootstrap phase to validate to.  @see \Drush\Boot::bootstrap_phases
  *
- * @return bool
- *   TRUE if bootstrap is possible, FALSE if the validation failed.
+ * @return
+ *   True if bootstrap is possible, False if the validation failed.
  *
- * @see \Drush\Boot\Boot::bootstrap_phases()
  */
 function drush_bootstrap_validate($phase) {
   $bootstrap = drush_get_bootstrap_object();
@@ -442,17 +400,15 @@ function drush_bootstrap_validate($phase) {
 /**
  * Bootstrap to the specified phase.
  *
- * @param int $max_phase_index
+ * @param $max_phase_index
  *   Only attempt bootstrap to the specified level.
- *
- * @return bool
- *   TRUE if the specified bootstrap phase has completed.
  */
 function drush_bootstrap_to_phase($max_phase_index) {
+  // If $max_phase_index is DRUSH_BOOTSTRAP_MAX, then
+  // we will bootstrap as far as we can.  drush_bootstrap_max
+  // is different than drush_bootstrap_to_phase in that
+  // it is not an error if DRUSH_BOOTSTRAP_LOGIN is not reached.
   if ($max_phase_index == DRUSH_BOOTSTRAP_MAX) {
-    // Bootstrap as far as we can without throwing an error, but log for
-    // debugging purposes.
-    drush_log(dt("Trying to bootstrap as far as we can."), 'debug');
     drush_bootstrap_max();
     return TRUE;
   }
@@ -485,20 +441,21 @@ function drush_bootstrap_to_phase($max_phase_index) {
 /**
  * Bootstrap to the highest level possible, without triggering any errors.
  *
- * @param int $max_phase_index
- *   (optional) Only attempt bootstrap to the specified level.
+ * @param $max_phase_index
+ *   Only attempt bootstrap to the specified level.
  *
- * @return int
- *   The maximum phase to which we bootstrapped.
+ *  @return int
+ *    The maximum phase to which we bootstrapped.
  */
 function drush_bootstrap_max($max_phase_index = FALSE) {
-  $phases = _drush_bootstrap_phases(TRUE);
+  $phases = _drush_bootstrap_phases();
+  $phase_index = DRUSH_BOOTSTRAP_DRUSH;
   if (!$max_phase_index) {
     $max_phase_index = count($phases);
   }
 
-  // Try to bootstrap to the maximum possible level, without generating errors.
-  foreach ($phases as $phase_index => $current_phase) {
+  // Try to bootstrap to the maximum possible level, without generating errors
+  foreach ($phases as $phase_index) {
     if ($phase_index > $max_phase_index) {
       // Stop trying, since we achieved what was specified.
       break;
@@ -510,10 +467,6 @@ function drush_bootstrap_max($max_phase_index = FALSE) {
       }
     }
     else {
-      // drush_bootstrap_validate() only logs successful validations. For us,
-      // knowing what failed can also be important.
-      $previous = drush_get_context('DRUSH_BOOTSTRAP_PHASE');
-      drush_log(dt("Bootstrap phase !function() failed to validate; continuing at !current().", array('!function' => $current_phase, '!current' => $phases[$previous])), 'debug');
       break;
     }
   }

@@ -20,7 +20,6 @@ function usage_drush_command() {
   $items['usage-show'] = array(
     'bootstrap' => DRUSH_BOOTSTRAP_NONE,
     'description' => 'Show Drush usage information that has been logged but not sent.  ' . $disclaimer,
-    'hidden' => TRUE,
     'examples' => array(
       'drush usage-show' => 'Show cached usage statistics.',
       '$options[\'drush_usage_log\']  = TRUE;' => 'Specify in a .drushrc.php file that usage information should be logged locally in a usage statistics file.',
@@ -29,7 +28,6 @@ function usage_drush_command() {
   );
   $items['usage-send'] = array(
     'bootstrap' => DRUSH_BOOTSTRAP_NONE,
-    'hidden' => TRUE,
     'description' => 'Send anonymous Drush usage information to statistics logging site.  ' . $disclaimer,
     'examples' => array(
       'drush usage-send' => 'Immediately send cached usage statistics.',
@@ -110,7 +108,20 @@ function _drush_usage_get_file($required = FALSE) {
 }
 
 function _drush_usage_log($command, $file) {
-  $options = drush_get_command_options_extended($command);
+  drush_merge_engine_data($command);
+
+  // Start out with just the options in the current command record.
+  $options = _drush_get_command_options($command);
+  // If 'allow-additional-options' contains a list of command names,
+  // then union together all of the options from all of the commands.
+  if (is_array($command['allow-additional-options'])) {
+    $implemented = drush_get_commands();
+    foreach ($command['allow-additional-options'] as $subcommand_name) {
+      if (array_key_exists($subcommand_name, $implemented)) {
+        $options = array_merge($options, _drush_get_command_options($implemented[$subcommand_name]));
+      }
+    }
+  }
 
   $used = drush_get_merged_options();
   $command_specific = array_intersect(array_keys($used), array_keys($options));

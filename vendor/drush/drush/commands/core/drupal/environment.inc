@@ -9,9 +9,7 @@
 
 use Drupal\Core\Site\Settings;
 use Drupal\Core\StreamWrapper\PrivateStream;
-use Drupal\Core\StreamWrapper\PublicStream;
 use Drush\Log\LogLevel;
-use Drupal\Core\Logger\RfcLogLevel;
 
 /**
  * Get complete information for all available modules.
@@ -85,7 +83,7 @@ function drush_check_module_dependencies($modules, $module_info) {
       }
     }
     $status[$key]['unmet-dependencies'] = $unmet_dependencies;
-    $status[$key]['dependencies'] = $dependencies;
+    $status[$key]['dependencies'] = array_keys($dependencies);
   }
 
   return $status;
@@ -198,8 +196,7 @@ function drush_module_enable($modules) {
   drush_module_install($modules);
 
   // Our logger got blown away during the container rebuild above.
-  $boot = drush_select_bootstrap_class();
-  $boot->add_logger();
+  \Drupal::getContainer()->get('logger.factory')->addLogger(new \Drush\Log\DrushLog);
 
   // Flush all caches. No longer needed in D8 per https://github.com/drush-ops/drush/issues/1207
   // drupal_flush_all_caches();
@@ -226,8 +223,7 @@ function drush_module_disable($modules) {
 function drush_module_uninstall($modules) {
   \Drupal::service('module_installer')->uninstall($modules);
   // Our logger got blown away during the container rebuild above.
-  $boot = drush_select_bootstrap_class();
-  $boot->add_logger();
+  \Drupal::getContainer()->get('logger.factory')->addLogger(new \Drush\Log\DrushLog);
 }
 
 /**
@@ -253,18 +249,6 @@ function drush_module_invoke_all($hook) {
 }
 
 /**
- * Returns a list of enabled themes. Use drush_get_themes() if you need to rebuild
- * and include hidden as well.
- *
- * @return array
- *  A list of themes keyed by name.
- */
-function drush_theme_list() {
-  $theme_handler = \Drupal::service('theme_handler');
-  return $theme_handler->listInfo();
-}
-
-/**
  * Get complete information for all available themes.
  *
  * @param $include_hidden
@@ -277,10 +261,7 @@ function drush_get_themes($include_hidden = TRUE) {
   foreach ($themes as $key => $theme) {
     if (!$include_hidden) {
       if (isset($theme->info['hidden'])) {
-        // Don't exclude default or admin theme.
-        if ($key != _drush_theme_default() && $key != _drush_theme_admin()) {
-          unset($themes[$key]);
-        }
+        unset($themes[$key]);
       }
     }
   }
@@ -319,26 +300,29 @@ function drush_theme_disable($themes) {
 function drush_theme_uninstall($themes) {
   \Drupal::service('theme_handler')->uninstall($themes);
   // Our logger got blown away during the container rebuild above.
-  $boot = drush_select_bootstrap_class();
-  $boot->add_logger();
+  \Drupal::getContainer()->get('logger.factory')->addLogger(new \Drush\Log\DrushLog);
 }
 
 /**
  * Helper function to obtain the severity levels based on Drupal version.
  *
- * @return array
- *   Watchdog severity levels keyed by RFC 3164 severities.
+ * This is a copy of watchdog_severity_levels() without t().
+ *
+ * Severity levels, as defined in RFC 3164: http://www.ietf.org/rfc/rfc3164.txt.
+ *
+ * @return
+ *   Array of watchdog severity levels.
  */
 function drush_watchdog_severity_levels() {
   return array(
-    RfcLogLevel::EMERGENCY => LogLevel::EMERGENCY,
-    RfcLogLevel::ALERT => LogLevel::ALERT,
-    RfcLogLevel::CRITICAL => LogLevel::CRITICAL,
-    RfcLogLevel::ERROR => LogLevel::ERROR,
-    RfcLogLevel::WARNING => LogLevel::WARNING,
-    RfcLogLevel::NOTICE => LogLevel::NOTICE,
-    RfcLogLevel::INFO => LogLevel::INFO,
-    RfcLogLevel::DEBUG => LogLevel::DEBUG,
+    LogLevel::EMERGENCY => 'emergency',
+    LogLevel::ALERT => 'alert',
+    LogLevel::CRITICAL => 'critical',
+    LogLevel::ERROR    => 'error',
+    LogLevel::WARNING  => 'warning',
+    LogLevel::NOTICE   => 'notice',
+    LogLevel::INFO     => 'info',
+    LogLevel::DEBUG    => 'debug',
   );
 }
 
@@ -362,7 +346,7 @@ function _drush_theme_admin() {
 }
 
 function _drush_file_public_path() {
-  return PublicStream::basePath();
+  return Settings::get('file_public_path', conf_path() . '/files');
 }
 
 function _drush_file_private_path() {
@@ -416,5 +400,5 @@ function drush_get_token($value = NULL) {
  * Wrapper for _url().
  */
 function drush_url($path = NULL, array $options = array()) {
-  return \Drupal\Core\Url::fromUserInput('/' . $path, $options)->toString();
+  return \Drupal::urlGenerator()->generateFromPath($path, $options);
 }

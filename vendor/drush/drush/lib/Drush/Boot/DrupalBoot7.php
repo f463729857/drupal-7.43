@@ -15,16 +15,6 @@ class DrupalBoot7 extends DrupalBoot {
     }
   }
 
-  function get_version($drupal_root) {
-    $path = $drupal_root . '/includes/bootstrap.inc';
-    if (is_file($path)) {
-      require_once $path;
-      if (defined('VERSION')) {
-        return VERSION;
-      }
-    }
-  }
-
   function get_profile() {
     return drupal_get_profile();
   }
@@ -40,21 +30,20 @@ class DrupalBoot7 extends DrupalBoot {
 
   function contrib_modules_paths() {
     return array(
-      $this->conf_path() . '/modules',
+      conf_path() . '/modules',
       'sites/all/modules',
     );
   }
 
   function contrib_themes_paths() {
     return array(
-      $this->conf_path() . '/themes',
+      conf_path() . '/themes',
       'sites/all/themes',
     );
   }
 
   function bootstrap_drupal_core($drupal_root) {
     define('DRUPAL_ROOT', $drupal_root);
-    require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
     $core = DRUPAL_ROOT;
 
     return $core;

@@ -49,7 +49,6 @@ search-*
 shellalias: GOOD
   need test: shell alias with site alias
 site-install: FAIR. Implicit test by setUpDrupal().
-state: NONE
 ssh: GOOD
 topic
 usage-*

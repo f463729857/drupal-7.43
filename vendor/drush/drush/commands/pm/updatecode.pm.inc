@@ -124,9 +124,6 @@ function drush_pm_updatecode() {
  * @param $project
  *   The drupal project information from the drupal.org update service,
  *   copied from $update_info['drupal'].  @see drush_pm_updatecode.
- *
- * @return bool
- *   Success or failure. An error message will be logged.
  */
 function _pm_update_core(&$project, $tmpfile) {
   $release_info = drush_get_engine('release_info');
@@ -336,8 +333,6 @@ function pm_update_packages($update_info, $tmpfile) {
  * @param $project
  *   The project to upgrade.  $project['full_project_path'] must be set
  *   to the location where this project is stored.
- * @return bool
- *   Success or failure. An error message will be logged.
  */
 function pm_update_project($project, $version_control) {
   // 1. If the version control engine is a proper vcs we need to remove project
@@ -379,7 +374,7 @@ function pm_update_project($project, $version_control) {
  */
 function pm_update_finish($project, $version_control) {
   drush_print(dt('Project !project was updated successfully. Installed version is now !version.', array('!project' => $project['name'], '!version' => $project['candidate_version'])));
-  drush_command_invoke_all('pm_post_update', $project['name'], $project['releases'][$project['candidate_version']], $project);
+  drush_command_invoke_all('pm_post_update', $project['name'], $project['releases'][$project['candidate_version']]);
   $version_control->post_update($project);
 }
 

@@ -42,9 +42,7 @@ class Logger extends AbstractLogger {
       // TODO: move these implementations inside this class.
       $log =& drush_get_context('DRUSH_LOG', array());
       $log[] = $entry;
-      if ($level != LogLevel::DEBUG_NOTIFY) {
-        drush_backend_packet('log', $entry);
-      }
+      drush_backend_packet('log', $entry);
 
       if (drush_get_context('DRUSH_NOCOLOR')) {
         $red = "[%s]";
@@ -59,22 +57,19 @@ class Logger extends AbstractLogger {
 
       $verbose = drush_get_context('DRUSH_VERBOSE');
       $debug = drush_get_context('DRUSH_DEBUG');
-      $debugnotify = drush_get_context('DRUSH_DEBUG_NOTIFY');
 
       switch ($level) {
         case LogLevel::WARNING :
-        case LogLevel::CANCEL :
+        case 'cancel' :
           $type_msg = sprintf($yellow, $level);
           break;
         case 'failed' : // Obsolete; only here in case contrib is using it.
-        case LogLevel::EMERGENCY : // Not used by Drush
-        case LogLevel::ALERT : // Not used by Drush
-        case LogLevel::ERROR :
+        case 'error' :
           $type_msg = sprintf($red, $level);
           break;
-        case LogLevel::OK :
+        case 'ok' :
         case 'completed' : // Obsolete; only here in case contrib is using it.
-        case LogLevel::SUCCESS :
+        case 'success' :
         case 'status': // Obsolete; only here in case contrib is using it.
           // In quiet mode, suppress progress messages
           if (drush_get_context('DRUSH_QUIET')) {
@@ -82,26 +77,15 @@ class Logger extends AbstractLogger {
           }
           $type_msg = sprintf($green, $level);
           break;
-        case LogLevel::NOTICE :
+        case 'notice' :
         case 'message' : // Obsolete; only here in case contrib is using it.
-        case LogLevel::INFO :
+        case 'info' :
           if (!$verbose) {
             // print nothing. exit cleanly.
             return TRUE;
           }
           $type_msg = sprintf("[%s]", $level);
           break;
-        case LogLevel::DEBUG_NOTIFY :
-          $level = LogLevel::DEBUG; // Report 'debug', handle like 'preflight'
-        case LogLevel::PREFLIGHT :
-          if (!$debugnotify) {
-            // print nothing unless --debug AND --verbose. exit cleanly.
-            return TRUE;
-          }
-          $type_msg = sprintf("[%s]", $level);
-          break;
-        case LogLevel::BOOTSTRAP :
-        case LogLevel::DEBUG :
         default :
           if (!$debug) {
             // print nothing. exit cleanly.

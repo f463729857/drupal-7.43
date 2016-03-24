@@ -7,7 +7,7 @@
 /**
  * @todo there are no hooks fired after a command errors out.
  */
-register_shutdown_function('drush_notify_shutdown');
+register_shutdown_function('drush_notify_shutdown_error');
 
 /**
  * Implements hook_drush_help_alter().
@@ -19,21 +19,13 @@ function notify_drush_help_alter(&$command) {
       $command['options']['notify'] = array(
         'description' => 'Use system notifications to signal command completion. If set to a number, commands that finish in fewer seconds will not trigger a notification.',
         'example-value' => 60,
-        'never-propagate' => TRUE,
       );
       $command['options']['notify-audio'] = array(
         'description' => 'Trigger an audio alert to signal command completion. If set to a number, commands that finish in fewer seconds will not trigger a notification.',
         'example-value' => 60,
-        'never-propagate' => TRUE,
       );
-      $command['sub-options']['notify']['notify-cmd'] = array(
-        'description' => 'Specify the shell command to trigger the notification.',
-        'never-propagate' => TRUE,
-      );
-      $command['sub-options']['notify']['notify-cmd-audio'] = array(
-        'description' => 'Specify the shell command to trigger the audio notification.',
-        'never-propagate' => TRUE,
-      );
+      $command['sub-options']['notify']['notify-cmd'] = 'Specify the shell command to trigger the notification.';
+      $command['sub-options']['notify']['notify-cmd-audio'] = 'Specify the shell command to trigger the audio notification.';
     }
   }
 }
@@ -51,17 +43,21 @@ function notify_drush_help($section) {
 }
 
 /**
- * Shutdown function to signal on errors.
+ * Implements hook_drush_exit().
  */
-function drush_notify_shutdown() {
+function notify_drush_exit() {
   $cmd = drush_get_command();
-
   // pm-download handles its own notification.
   if ($cmd['command'] != 'pm-download' && drush_notify_allowed($cmd['command'])) {
     $msg = dt("Command '!command' completed.", array('!command' => $cmd['command']));
     drush_notify_send(drush_notify_command_message($cmd['command'], $msg));
   }
+}
 
+/**
+ * Shutdown function to signal on errors.
+ */
+function drush_notify_shutdown_error() {
   if (drush_get_option('notify', FALSE) && drush_get_error()) {
     // If the only error is that notify failed, do not try to notify again.
     $log = drush_get_error_log();
@@ -70,6 +66,7 @@ function drush_notify_shutdown() {
     }
 
     // Send an alert that the command failed.
+    $cmd = drush_get_command();
     if (drush_notify_allowed($cmd['command'])) {
       $msg = dt("Command '!command' failed.", array('!command' => $cmd['command']));
       drush_notify_send(drush_notify_command_message($cmd['command'] . ':error', $msg));
