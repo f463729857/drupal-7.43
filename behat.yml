@@ -16,4 +16,4 @@ default:
       blackbox: ~
       api_driver: "drush"
       drush:
-        root: /Applications/MAMP/htdocs/drupal-7.43
+        root: /home/rof/clone
