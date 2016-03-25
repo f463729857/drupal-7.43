@@ -9,7 +9,7 @@ Scenario: Tagged scenario uses Drush driver and succeeds
 Given I am logged in as a user with the "authenticated user" role
 Then I should see "Welcome to Site-Install"
 
-@api @test @javascript
+ @test @javascript
 Scenario: test
   Given I am on "/"
-  Then I should see "Welcome to Site-Install"
+  Then I should see "sign in with"

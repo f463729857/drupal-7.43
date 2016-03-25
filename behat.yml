@@ -11,9 +11,9 @@ default:
     Behat\MinkExtension:
       goutte: ~
       selenium2: ~
-      base_url: http://localhost:8888/drupal-7.43
+      base_url: https://codeship.com/projects/141531/configure_tests
     Drupal\DrupalExtension:
       blackbox: ~
       api_driver: "drush"
       drush:
-        root: /home/rof/clone
+        root: /Applications/MAMP/htdocs/drupal-7.43
